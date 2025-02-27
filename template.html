@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分级书签目录</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* 卡片样式 */
+        .bookmark-card {
+            transition: transform 0.3s ease;
+            border-radius: 15px;
+            background-color: #f8f9fa;
+            margin: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .bookmark-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+            background-color: #e9ecef;
+        }
+
+        /* 图标样式 */
+        .icon-container {
+            width: 48px;
+            height: 48px;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            margin: 10px;
+        }
+
+        .icon-container img {
+            max-width: 80%;
+            max-height: 80%;
+            border-radius: 50%;
+        }
+
+        /* 搜索框样式 */
+        .search-container {
+            position: relative;
+            margin: 20px;
+        }
+
+        .search-input {
+            padding: 10px;
+            width: 100%;
+            border: 2px solid #007bff;
+            border-radius: 25px;
+            transition: border-color 0.3s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #0056b3;
+            box-shadow: 0 0 10px rgba(0, 86, 179, 0.3);
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 0;
+            width: 300px;
+            padding: 20px;
+            background: transparent;
+            color: #000;
+            overflow-y: auto;
+            border-right: 1px solid #dee2e6;
+        }
+
+        .sidebar .nav-link {
+            padding: 20px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            color: #000;
+            text-decoration: none;
+            display: block;
+            font-size: 1.2rem;
+            background-color: #f8f9fa;
+            margin-bottom: 10px;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link:focus {
+            background-color: #e9ecef;
+        }
+
+        .active-category {
+            background-color: #007bff;
+            color: white;
+        }
+
+        /* 手风琴样式 */
+        .accordion-item {
+            margin-bottom: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+
+        .accordion-button {
+            background-color: #f8f9fa;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            font-size: 1.2rem;
+            padding: 20px 15px;
+        }
+
+        .accordion-button:focus {
+            z-index: 3;
+            border-color: #bfe2ff;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+
+        .accordion-button:not(.collapsed) {
+            background-color: #e9ecef;
+        }
+
+        .accordion-body {
+            padding: 0;
+        }
+
+        /* 内容区域样式 */
+        .content {
+            margin-left: 320px;
+            padding: 20px;
+        }
+
+        .content h1 {
+            margin-top: 0;
+        }
+
+        /* 书签卡片样式 */
+        .card-title {
+            margin-bottom: 10px;
+        }
+
+        .card-text.remark {
+            font-size: 0.9rem;
+            color: #6c757d;
+            padding: 5px 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            margin-top: 10px;
+            white-space: pre-line;
+        }
+
+        /* 文本缩进 */
+        .text-indent {
+            padding-left: 20px;
+        }
+
+        /* 行间距 */
+        .row#bookmarks-container > .row {
+            margin-bottom: 20px; /* 设置行间距 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-auto sidebar">
+                <nav id="categoryNav" class="nav flex-column" aria-label="书签分类">
+                    <!-- 动态生成的分类链接将显示在这里 -->
+                </nav>
+            </div>
+            <!-- 内容区域 -->
+            <div class="col content">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h1 class="h3 mb-0">书签目录</h1>
+                    <div class="search-container">
+                        <input type="text" class="search-input" placeholder="搜索书签...">
+                    </div>
+                </div>
+                <div class="row" id="bookmarks-container">
+                    <!-- 书签卡片将动态加载到这里 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入 Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 从 Jinja2 传递的书签数据
+        const bookMark = {{ bookmarks | tojson }};
+        let categoryTree = {};
+        let bookMarksShow = bookMark;
+
+        // 构建分类树
+        function buildCategoryTree() {
+            bookMark.forEach(bookmark => {
+                const categories = bookmark.categories.filter(cat => cat !== "");
+                let currentLevel = categoryTree;
+                categories.forEach(category => {
+                    if (!currentLevel[category]) {
+                        currentLevel[category] = {};
+                    }
+                    currentLevel = currentLevel[category];
+                });
+            });
+        }
+
+        // 渲染分类导航
+        function renderCategoryNav(container, categories, parentPath = "") {
+            Object.keys(categories).forEach(category => {
+                const newPath = parentPath === "" ? category : `${parentPath} > ${category}`;
+                const accordionItem = document.createElement('div');
+                accordionItem.className = 'accordion-item';
+
+                const accordionHeader = document.createElement('h2');
+                accordionHeader.className = 'accordion-header';
+                accordionHeader.id = `heading-${newPath.replace(/ /g, '-')}`;
+
+                const accordionButton = document.createElement('button');
+                accordionButton.className = 'accordion-button collapsed';
+                accordionButton.type = 'button';
+                accordionButton.setAttribute('data-bs-toggle', 'collapse');
+                accordionButton.setAttribute('data-bs-target', `#collapse-${newPath.replace(/ /g, '-')}`);
+                accordionButton.setAttribute('aria-expanded', 'false');
+                accordionButton.setAttribute('aria-controls', `collapse-${newPath.replace(/ /g, '-')}`);
+                accordionButton.textContent = category;
+                accordionButton.onclick = () => filterBookmarksByCategory(newPath);
+
+                accordionHeader.appendChild(accordionButton);
+                accordionItem.appendChild(accordionHeader);
+
+                const accordionCollapse = document.createElement('div');
+                accordionCollapse.id = `collapse-${newPath.replace(/ /g, '-')}`;
+                accordionCollapse.className = 'accordion-collapse collapse';
+                accordionCollapse.setAttribute('aria-labelledby', `heading-${newPath.replace(/ /g, '-')}`);
+
+                const accordionBody = document.createElement('div');
+                accordionBody.className = 'accordion-body';
+                accordionBody.style.padding = '10px';
+
+                accordionCollapse.appendChild(accordionBody);
+                accordionItem.appendChild(accordionCollapse);
+
+                container.appendChild(accordionItem);
+
+                if (Object.keys(categories[category]).length > 0) {
+                    renderCategoryNav(accordionBody, categories[category], newPath);
+                }
+            });
+        }
+
+        // 初始化分类导航
+        function initializeCategoryNav() {
+            buildCategoryTree();
+            const navContainer = document.getElementById('categoryNav');
+            navContainer.innerHTML = '';
+            renderCategoryNav(navContainer, categoryTree);
+        }
+
+        // 根据分类过滤书签
+        function filterBookmarksByCategory(category) {
+            if (!category) {
+                bookMarksShow = bookMark;
+            } else {
+                bookMarksShow = bookMark.filter(bookmark => {
+                    const categoryPath = bookmark.categories.filter(cat => cat !== "").join(" > ");
+                    return categoryPath.startsWith(category);
+                });
+            }
+            renderBookmarks(bookMarksShow);
+        }
+
+        // 渲染书签
+        function renderBookmarks(bookmarks) {
+            const container = document.getElementById('bookmarks-container');
+            container.innerHTML = '';
+            // 每三个卡片换一行，添加行间距
+            for (let i = 0; i < bookmarks.length; i += 3) {
+                const row = document.createElement('div');
+                row.className = 'row mb-4'; // 行间距设置为 1rem
+
+                bookmarks.slice(i, i + 3).forEach(bookmark => {
+                    const card = document.createElement('div');
+                    card.className = 'col-md-4';
+                    card.innerHTML = `
+                        <div class="bookmark-card card h-100">
+                            <div class="card-body p-4 text-center">
+                                <div class="icon-container">
+                                    <img src="${bookmark.icon}">
+                                </div>
+                                <h5 class="card-title mt-3">${bookmark.title}</h5>
+                                <p class="card-text remark">${bookmark.remark}</p>
+                                <a href="${bookmark.url}" class="btn btn-primary mt-3" target="_blank">访问</a>
+                                <p class="card-text text-muted mt-2">
+                                    ${bookmark.categories.filter(cat => cat !== "").join(" > ")}
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                    row.appendChild(card);
+                });
+
+                container.appendChild(row);
+            }
+        }
+
+		// 搜索功能
+        document.querySelector('.search-input').addEventListener('input', function(e) {
+			const keywords = e.target.value.trim().toLowerCase();
+			let filteredBookmarks = bookMark;
+
+			if (keywords !== '') {
+				filteredBookmarks = bookMark.filter(bookmark => {
+					const title = (bookmark.title || "").toLowerCase();
+					const url = (bookmark.url || "").toLowerCase();
+					const categories = (bookmark.categories || []).join(" ").toLowerCase();
+					const remark = (bookmark.remark || "").toLowerCase();
+					return title.includes(keywords) || url.includes(keywords) || categories.includes(keywords) || remark.includes(keywords);
+				});
+			}
+			
+			bookMarksShow = filteredBookmarks;
+			renderBookmarks(bookMarksShow);
+		});
+
+        // 初始化
+        initializeCategoryNav();
+        renderBookmarks(bookMark);
+    </script>
+</body>
+</html>
