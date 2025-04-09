@@ -307,24 +307,42 @@
             }
         }
 
-		// 搜索功能
+        // 搜索框功能
         document.querySelector('.search-input').addEventListener('input', function(e) {
-			const keywords = e.target.value.trim().toLowerCase();
-			let filteredBookmarks = bookMark;
+            const keywords = e.target.value.trim().toLowerCase();
+            let filteredBookmarks = bookMark;
 
-			if (keywords !== '') {
-				filteredBookmarks = bookMark.filter(bookmark => {
-					const title = (bookmark.title || "").toLowerCase();
-					const url = (bookmark.url || "").toLowerCase();
-					const categories = (bookmark.categories || []).join(" ").toLowerCase();
-					const remark = (bookmark.remark || "").toLowerCase();
-					return title.includes(keywords) || url.includes(keywords) || categories.includes(keywords) || remark.includes(keywords);
-				});
-			}
-			
-			bookMarksShow = filteredBookmarks;
-			renderBookmarks(bookMarksShow);
-		});
+            if (keywords !== '') {
+                filteredBookmarks = bookMark.filter(bookmark => {
+                    const title = (bookmark.title || "").toLowerCase();
+                    const url = (bookmark.url || "").toLowerCase();
+                    const categories = (bookmark.categories || []).join(" ").toLowerCase();
+                    const remark = (bookmark.remark || "").toLowerCase();
+                    return title.includes(keywords) || url.includes(keywords) || categories.includes(keywords) || remark.includes(keywords);
+                });
+            }
+            
+            bookMarksShow = filteredBookmarks;
+            renderBookmarks(bookMarksShow);
+        });
+
+        // 关闭当前选项卡功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const accordionCollapses = document.querySelectorAll('.accordion-collapse');
+            
+            accordionCollapses.forEach(collapse => {
+                // 监听 collapse 展开事件
+                collapse.addEventListener('show.bs.collapse', function() {
+                    // 关闭所有其他同级别的 collapse
+                    accordionCollapses.forEach(otherCollapse => {
+                        if (otherCollapse !== collapse && otherCollapse.parentElement.parentElement === collapse.parentElement.parentElement) {
+                            const bsCollapse = new bootstrap.Collapse(otherCollapse, { toggle: false });
+                            bsCollapse.hide();
+                        }
+                    });
+                });
+            });
+        });
 
         // 初始化
         initializeCategoryNav();
