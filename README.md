@@ -17,7 +17,7 @@
 ## 技术栈
 
 - **核心框架**：Python 3.8+
-- **书签提取**：[Pintree Bookmarks Exporter](https://www.pintree.io/)
+- **书签提取**：[Pintree Bookmarks Exporter](https://www.pintree.io/zh)
 - **数据处理**：json + Pandas
 - **网页生成**：Jinja2 + Bootstrap 5
 
