@@ -60,6 +60,6 @@ project/
 
 - 本项目生成的代码仅限于个人使用，如需创建可盈利的公共目录网站可基于 [pintree](https://www.pintree.io/zh) 的项目进行创建。
 
-- 本程序代码参考自 [Kimi](https://kimi.moonshot.cn/)、[DeepSeek](https://www.deepseek.com/)（[腾讯元宝](https://yuanbao.tencent.com/)）等国产大模型，衷心感谢这些人工智能研究团队的技术支持。
+- 本程序核心代码借助 [Kimi](https://kimi.moonshot.cn/)、[DeepSeek](https://www.deepseek.com/)（[腾讯元宝](https://yuanbao.tencent.com/)）等国产大模型进行编写，衷心感谢这些人工智能研究团队的技术支持。
 
   
